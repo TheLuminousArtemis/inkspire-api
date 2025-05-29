@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:latest
+    container_name: socialnews-db
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: adminpassword
+      POSTGRES_DB: socialnews
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  db_data:
