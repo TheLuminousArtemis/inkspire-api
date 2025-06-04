@@ -1,24 +1,31 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
+	"github.com/theluminousartemis/socialnews/docs"
 	"github.com/theluminousartemis/socialnews/internal/store"
+	"go.uber.org/zap"
 )
 
 type application struct {
 	config  *Config
 	storage *store.Storage
+	l       *zap.SugaredLogger
 }
 
 type Config struct {
-	addr string
-	db   *dbConfig
-	env  string
+	addr   string
+	apiURL string
+	db     *dbConfig
+	env    string
+	mail   mailConfig
 }
 
 type dbConfig struct {
@@ -26,6 +33,10 @@ type dbConfig struct {
 	maxOpenConns int
 	maxIdleConns int
 	maxIdleTime  string
+}
+
+type mailConfig struct {
+	exp time.Duration
 }
 
 func (app *application) Mount() *chi.Mux {
@@ -36,8 +47,9 @@ func (app *application) Mount() *chi.Mux {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
 	r.Route("/v1", func(r chi.Router) {
-		r.Get("/health/", app.HealthCheck)
-
+		r.Get("/health", app.HealthCheck)
+		docsUrl := fmt.Sprintf("%s/swagger/doc.json", app.config.addr)
+		r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL(docsUrl)))
 		r.Route("/posts", func(r chi.Router) {
 			r.Post("/", app.createPostHandler)
 			r.Route("/{postID}", func(r chi.Router) {
@@ -63,11 +75,19 @@ func (app *application) Mount() *chi.Mux {
 				r.Get("/feed", app.getUserFeedHandler)
 			})
 		})
+
+		//users auth & registration
+		r.Route("/authentication", func(r chi.Router) {
+			r.Post("/user", app.registerUserHandler)
+		})
 	})
 	return r
 }
 
 func (app *application) Start(mux http.Handler) error {
+	docs.SwaggerInfo.Version = version
+	docs.SwaggerInfo.Host = app.config.apiURL
+	docs.SwaggerInfo.BasePath = "/v1"
 	srv := &http.Server{
 		Addr:         app.config.addr,
 		Handler:      mux,
@@ -76,7 +96,7 @@ func (app *application) Start(mux http.Handler) error {
 		IdleTimeout:  time.Minute,
 	}
 
-	log.Printf("Server started on %s", app.config.addr)
+	app.l.Infof("Starting server at", "addr", app.config.addr, "env", app.config.env)
 	err := srv.ListenAndServe()
 	if err != nil {
 		log.Fatalf("Error starting server: %v", err)

@@ -12,6 +12,8 @@ var (
 	ErrConflict          = errors.New("record conflict")
 	FollowConflict       = errors.New("follow conflict")
 	QueryTimeoutDuration = 5 * time.Second
+	ErrDuplicateEmail    = errors.New("duplicate email")
+	ErrDuplicateUsername = errors.New("duplicate username")
 )
 
 type Storage struct {
@@ -23,8 +25,9 @@ type Storage struct {
 		GetUserFeed(context.Context, int64, PagintatedFeedQuery) ([]PostWithMetadata, error)
 	}
 	Users interface {
-		Create(context.Context, *User) error
+		Create(context.Context, *sql.Tx, *User) error
 		GetByID(context.Context, int64) (*User, error)
+		CreateAndInvite(ctx context.Context, user *User, tokentoken string, invitationExp time.Duration) error
 	}
 	Comments interface {
 		Create(context.Context, *Comment) error
@@ -43,4 +46,17 @@ func NewPostgresStorage(db *sql.DB) *Storage {
 		Comments:  &PostgresCommentStore{db},
 		Followers: &PostgresFollowerStore{db},
 	}
+}
+
+func withTx(db *sql.DB, ctx context.Context, fn func(*sql.Tx) error) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	if err := fn(tx); err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }

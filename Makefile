@@ -1,5 +1,5 @@
 include .envrc
-MIGRATIONS_PATH = ./cmd/migrate/migrations
+MIGRATIONS_PATH = ./migrate/migrations
 
 .PHONY: migrate create
 migration:
@@ -16,3 +16,8 @@ migrate-down:
 .PHONY: seed
 seed:
 	@go run ./cmd/migrate/seed/main.go
+
+.PHONY: gen-docs
+gen-docs:
+	# @swag init -g ./api/main.go -d ./cmd/api,./internal/db,./internal/store, && swag fmt
+	@swag init -g ./main.go -d cmd/api,./internal/db,./internal/store && swag fmt
