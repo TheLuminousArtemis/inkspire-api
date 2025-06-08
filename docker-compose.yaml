@@ -1,11 +1,11 @@
 services:
   db:
     image: postgres:latest
-    container_name: socialnews-db
+    container_name: inkspire-db
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: adminpassword
-      POSTGRES_DB: socialnews
+      POSTGRES_DB: inkspire
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:

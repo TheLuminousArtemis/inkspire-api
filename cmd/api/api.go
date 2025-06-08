@@ -64,6 +64,7 @@ func (app *application) Mount() *chi.Mux {
 		})
 
 		r.Route("/users", func(r chi.Router) {
+			r.Put("/activate/{token}", app.activateUserHandler)
 			r.Route("/{userID}", func(r chi.Router) {
 				r.Use(app.userContextMiddleware)
 				r.Get("/", app.getUserHandler)
@@ -96,7 +97,7 @@ func (app *application) Start(mux http.Handler) error {
 		IdleTimeout:  time.Minute,
 	}
 
-	app.l.Infof("Starting server at", "addr", app.config.addr, "env", app.config.env)
+	app.l.Infow("Starting server at", zap.String("addr", app.config.addr), zap.String("env", app.config.env))
 	err := srv.ListenAndServe()
 	if err != nil {
 		log.Fatalf("Error starting server: %v", err)

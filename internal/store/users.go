@@ -2,7 +2,9 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -14,6 +16,7 @@ type User struct {
 	Email     string    `json:"email"`
 	Password  password  `json:"-"`
 	CreatedAt time.Time `json:"created_at"`
+	IsActive  bool      `json:"is_active"`
 }
 
 type password struct {
@@ -37,10 +40,10 @@ type PostgresUserStore struct {
 
 func (s *PostgresUserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
 	query := `
-INSERT INTO users (username, email, password, created_at)
-VALUES ($1, $2, $3, $4)
+INSERT INTO users (username, email, password)
+VALUES ($1, $2, $3)
 RETURNING id, created_at`
-	row := tx.QueryRowContext(ctx, query, user.Username, user.Email, user.Password.hash, user.CreatedAt)
+	row := tx.QueryRowContext(ctx, query, user.Username, user.Email, user.Password.hash)
 	err := row.Scan(&user.ID, &user.CreatedAt)
 	if err != nil {
 		switch {
@@ -88,6 +91,28 @@ func (s *PostgresUserStore) CreateAndInvite(ctx context.Context, user *User, tok
 	})
 }
 
+func (s *PostgresUserStore) Activate(ctx context.Context, token string) error {
+	return withTx(s.db, ctx, func(tx *sql.Tx) error {
+		//fetch user
+		user, err := s.getUserFromInvitation(ctx, tx, token)
+		if err != nil {
+			return err
+		}
+
+		//update user
+		if err := s.update(ctx, tx, user.ID); err != nil {
+			return err
+		}
+
+		//delete invite
+		if err := s.deleteUserInvite(ctx, tx, user.ID); err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
 func (s *PostgresUserStore) createUserInvitation(ctx context.Context, tx *sql.Tx, token string, invitationExp time.Duration, userID int64) error {
 	query := `INSERT INTO user_invitations (token, user_id, expiry) VALUES ($1, $2, $3)`
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
@@ -98,5 +123,61 @@ func (s *PostgresUserStore) createUserInvitation(ctx context.Context, tx *sql.Tx
 		return err
 	}
 
+	return nil
+}
+
+func (s *PostgresUserStore) getUserFromInvitation(ctx context.Context, tx *sql.Tx, token string) (*User, error) {
+	query := `SELECT u.id, u.username, u.email, u.created_at, u.is_active
+	FROM users u
+	JOIN user_invitations ui ON u.id = ui.user_id
+	WHERE ui.token = $1 AND ui.expiry > CLOCK_TIMESTAMP()`
+
+	hash := sha256.Sum256([]byte(token))
+	hashToken := hex.EncodeToString(hash[:])
+
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	user := &User{}
+	err := tx.QueryRowContext(ctx, query, hashToken).Scan(
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.CreatedAt,
+		&user.IsActive,
+	)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			return nil, ErrNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return user, nil
+}
+
+func (s *PostgresUserStore) update(ctx context.Context, tx *sql.Tx, id int64) error {
+	query := `UPDATE users SET is_active = TRUE WHERE id = $1`
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	_, err := tx.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *PostgresUserStore) deleteUserInvite(ctx context.Context, tx *sql.Tx, userID int64) error {
+	query := `DELETE FROM user_invitations WHERE user_id = $1`
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+	_, err := tx.ExecContext(ctx, query, userID)
+	if err != nil {
+		return err
+	}
 	return nil
 }

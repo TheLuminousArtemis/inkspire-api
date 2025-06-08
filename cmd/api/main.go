@@ -30,7 +30,7 @@ func main() {
 		apiURL: env.GetString("API_URL", "localhost:3000"),
 
 		db: &dbConfig{
-			addr:         env.GetString("DB_ADDR", "postgres://admin:adminpassword@localhost:5432/socialnews?sslmode=disable"),
+			addr:         env.GetString("DB_ADDR", "postgres://admin:adminpassword@localhost:5432/inkspire?sslmode=disable"),
 			maxOpenConns: env.GetInt("DB_MAX_OPEN_CONNS", 30),
 			maxIdleConns: env.GetInt("DB_MAX_IDLE_CONNS", 30),
 			maxIdleTime:  env.GetString("DB_MAX_IDLE_TIME", "15m"),

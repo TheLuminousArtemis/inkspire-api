@@ -15,7 +15,7 @@ migrate-down:
 
 .PHONY: seed
 seed:
-	@go run ./cmd/migrate/seed/main.go
+	@go run ./migrate/seed/main.go
 
 .PHONY: gen-docs
 gen-docs:

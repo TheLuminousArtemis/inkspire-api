@@ -195,7 +195,7 @@ func (app *application) postsContextMiddleware(next http.Handler) http.Handler {
 		if err != nil {
 			switch err {
 			case store.ErrNotFound:
-				app.notFoundErrorResponse(w, r, err)
+				app.postNotFoundErrorResponse(w, r, err)
 			default:
 				app.internalServerError(w, r, err)
 			}

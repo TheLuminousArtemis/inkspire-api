@@ -11,7 +11,7 @@ func (app *application) internalServerError(w http.ResponseWriter, r *http.Reque
 
 func (app *application) badRequestError(w http.ResponseWriter, r *http.Request, err error) {
 	app.l.Warnf("bad request error: %v path: %s err: %v", r.Method, r.URL.Path, err.Error())
-	writeJSONError(w, http.StatusBadGateway, err.Error())
+	writeJSONError(w, http.StatusBadRequest, err.Error())
 }
 
 func (app *application) conflictResponse(w http.ResponseWriter, r *http.Request, err error) {
@@ -19,7 +19,12 @@ func (app *application) conflictResponse(w http.ResponseWriter, r *http.Request,
 	writeJSONError(w, http.StatusConflict, err.Error())
 }
 
-func (app *application) notFoundErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
-	app.l.Warnf("not found error: %v path: %s err: %v", r.Method, r.URL.Path, err.Error())
-	writeJSONError(w, http.StatusNotFound, "not found error")
+func (app *application) userNotFoundErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
+	app.l.Warnf("user not found error: %v path: %s err: %v", r.Method, r.URL.Path, err.Error())
+	writeJSONError(w, http.StatusNotFound, "user not found error")
+}
+
+func (app *application) postNotFoundErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
+	app.l.Warnf("post not found error: %v path: %s err: %v", r.Method, r.URL.Path, err.Error())
+	writeJSONError(w, http.StatusNotFound, "Post not found error")
 }
