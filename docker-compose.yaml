@@ -1,11 +1,11 @@
 services:
   db:
     image: postgres:latest
-    container_name: inkspire-db
+    container_name: wisely-db
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: adminpassword
-      POSTGRES_DB: inkspire
+      POSTGRES_DB: wisely
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:

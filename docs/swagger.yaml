@@ -167,11 +167,11 @@ definitions:
     type: object
 info:
   contact: {}
-  description: API for SocialNews, a social news platform.
+  description: API for Wise.ly, a community driven Q&A platform.
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
-  title: Swagger SocialNews
+  title: Wise.ly
 paths:
   /authentication/user:
     post:
