@@ -10,16 +10,18 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 	"github.com/theluminousartemis/socialnews/docs"
+	"github.com/theluminousartemis/socialnews/internal/auth"
 	"github.com/theluminousartemis/socialnews/internal/mailer"
 	"github.com/theluminousartemis/socialnews/internal/store"
 	"go.uber.org/zap"
 )
 
 type application struct {
-	config  *Config
-	storage *store.Storage
-	l       *zap.SugaredLogger
-	mailer  mailer.Client
+	config        *Config
+	storage       *store.Storage
+	l             *zap.SugaredLogger
+	mailer        mailer.Client
+	authenticator auth.Authenticator
 }
 
 type Config struct {
@@ -46,8 +48,15 @@ type mailConfig struct {
 	password  string
 }
 
+type jwtConfig struct {
+	secret string
+	exp    time.Duration
+	iss    string
+}
+
 type authConfig struct {
 	basic basicConfig
+	token jwtConfig
 }
 
 type basicConfig struct {
@@ -95,6 +104,7 @@ func (app *application) Mount() *chi.Mux {
 
 		//users auth & registration
 		r.Route("/authentication", func(r chi.Router) {
+			r.Post("/token", app.createTokenHandler)
 			r.Post("/user", app.registerUserHandler)
 		})
 	})

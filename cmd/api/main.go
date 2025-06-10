@@ -4,6 +4,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/theluminousartemis/socialnews/internal/auth"
 	"github.com/theluminousartemis/socialnews/internal/db"
 	"github.com/theluminousartemis/socialnews/internal/env"
 	"github.com/theluminousartemis/socialnews/internal/mailer"
@@ -48,7 +49,13 @@ func main() {
 				user: env.GetString("AUTH_BASIC_USER", "admin"),
 				pass: env.GetString("AUTH_BASIC_PASS", "admin"),
 			},
+			token: jwtConfig{
+				secret: env.GetString("AUTH_TOKEN_SECRET", "VeryComplexAuthTokenSecret"),
+				exp:    time.Hour * 24 * 3,
+				iss:    "wise.ly",
+			},
 		},
+
 		frontendURL: env.GetString("FRONTEND_URL", "http://localhost:4000"),
 	}
 	//logger
@@ -71,11 +78,14 @@ func main() {
 		log.Fatal(err)
 	}
 
+	jwtAuthenticator := auth.NewJWTAuthenticator(cfg.auth.token.secret, cfg.auth.token.iss, cfg.auth.token.iss)
+
 	app := &application{
-		config:  cfg,
-		storage: store,
-		l:       logger,
-		mailer:  mailtrap,
+		config:        cfg,
+		storage:       store,
+		l:             logger,
+		mailer:        mailtrap,
+		authenticator: jwtAuthenticator,
 	}
 
 	mux := app.Mount()

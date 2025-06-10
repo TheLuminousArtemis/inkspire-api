@@ -62,7 +62,7 @@ func (s *PostgresUserStore) GetByID(ctx context.Context, id int64) (*User, error
 	query := `
 SELECT id, username, email, created_at
 FROM users
-WHERE id = $1`
+WHERE id = $1 AND is_active = true`
 	var user User
 	err := s.db.QueryRowContext(ctx, query, id).Scan(&user.ID, &user.Username, &user.Email, &user.CreatedAt)
 	if err != nil {
@@ -125,6 +125,24 @@ func (s *PostgresUserStore) Delete(ctx context.Context, userID int64) error {
 
 		return nil
 	})
+}
+
+func (s *PostgresUserStore) GetUserByEmail(ctx context.Context, email string) (*User, error) {
+	query := `SELECT id, username, email, created_at FROM users WHERE email = $1 AND is_active = true`
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+	var user User
+	err := s.db.QueryRowContext(ctx, query, email).Scan(&user.ID, &user.Username, &user.Email, &user.CreatedAt)
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			return nil, ErrNotFound
+		default:
+			return nil, err
+		}
+	}
+	return &user, nil
+
 }
 
 func (s *PostgresUserStore) createUserInvitation(ctx context.Context, tx *sql.Tx, token string, invitationExp time.Duration, userID int64) error {
