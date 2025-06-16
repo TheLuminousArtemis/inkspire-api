@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/theluminousartemis/socialnews/internal/auth"
+	"github.com/theluminousartemis/socialnews/internal/ratelimiter"
 	"github.com/theluminousartemis/socialnews/internal/store"
 	"github.com/theluminousartemis/socialnews/internal/store/cache"
 	"go.uber.org/zap"
@@ -17,12 +18,17 @@ func newTestApplication(t *testing.T, cfg config) *application {
 	mockStore := store.NewMockStore()
 	mockCache := cache.NewMockStore()
 	auth := &auth.TestAuthenticator{}
+	ratelimiter := ratelimiter.NewFixedWindowRateLimiter(
+		cfg.ratelimiter.RequestsPerTimeFrame,
+		cfg.ratelimiter.Timeframe,
+	)
 	return &application{
 		l:             logger,
 		storage:       mockStore,
 		cache:         mockCache,
 		config:        cfg,
 		authenticator: auth,
+		rateLimiter:   ratelimiter,
 	}
 }
 
