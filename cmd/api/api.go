@@ -1,9 +1,13 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
-	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -12,19 +16,23 @@ import (
 	"github.com/theluminousartemis/socialnews/docs"
 	"github.com/theluminousartemis/socialnews/internal/auth"
 	"github.com/theluminousartemis/socialnews/internal/mailer"
+	"github.com/theluminousartemis/socialnews/internal/ratelimiter"
 	"github.com/theluminousartemis/socialnews/internal/store"
+	"github.com/theluminousartemis/socialnews/internal/store/cache"
 	"go.uber.org/zap"
 )
 
 type application struct {
-	config        *Config
-	storage       *store.Storage
+	config        config
+	storage       store.Storage
 	l             *zap.SugaredLogger
 	mailer        mailer.Client
 	authenticator auth.Authenticator
+	cache         cache.Storage
+	rateLimiter   ratelimiter.Limiter
 }
 
-type Config struct {
+type config struct {
 	addr        string
 	apiURL      string
 	db          *dbConfig
@@ -32,6 +40,15 @@ type Config struct {
 	mail        mailConfig
 	frontendURL string
 	auth        authConfig
+	redisCfg    redisConfig
+	ratelimiter ratelimiter.Config
+}
+
+type redisConfig struct {
+	addr     string
+	password string
+	db       int
+	enabled  bool
 }
 
 type dbConfig struct {
@@ -64,24 +81,29 @@ type basicConfig struct {
 	pass string
 }
 
-func (app *application) Mount() *chi.Mux {
+func (app *application) mount() *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
+	if app.config.ratelimiter.Enabled {
+		r.Use(app.RateLimiterMiddleware)
+	}
 	r.Route("/v1", func(r chi.Router) {
-		r.With(app.BasicAuthMiddleware()).Get("/health", app.HealthCheck)
+		// r.With(app.BasicAuthMiddleware()).Get("/health", app.HealthCheck)
+		r.Get("/health", app.HealthCheck)
 		docsUrl := fmt.Sprintf("%s/swagger/doc.json", app.config.addr)
 		r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL(docsUrl)))
 		r.Route("/posts", func(r chi.Router) {
+			r.Use(app.AuthTokenMiddleware)
 			r.Post("/", app.createPostHandler)
 			r.Route("/{postID}", func(r chi.Router) {
 				r.Use(app.postsContextMiddleware)
 				r.Get("/", app.getPostHandler)
-				r.Delete("/", app.deletePostHandler)
-				r.Patch("/", app.updatePostHandler)
+				r.Delete("/", app.checkPostOwnership("admin", app.deletePostHandler))
+				r.Patch("/", app.checkPostOwnership("moderator", app.updatePostHandler))
 				r.Route("/comments", func(r chi.Router) {
 					r.Post("/", app.createCommentHandler)
 				})
@@ -91,13 +113,14 @@ func (app *application) Mount() *chi.Mux {
 		r.Route("/users", func(r chi.Router) {
 			r.Put("/activate/{token}", app.activateUserHandler)
 			r.Route("/{userID}", func(r chi.Router) {
-				r.Use(app.userContextMiddleware)
+				r.Use(app.AuthTokenMiddleware)
 				r.Get("/", app.getUserHandler)
 				r.Put("/follow", app.followUserHandler)
 				r.Put("/unfollow", app.unfollowUserHandler)
 			})
 
 			r.Group(func(r chi.Router) {
+				r.Use(app.AuthTokenMiddleware)
 				r.Get("/feed", app.getUserFeedHandler)
 			})
 		})
@@ -123,10 +146,30 @@ func (app *application) Start(mux http.Handler) error {
 		IdleTimeout:  time.Minute,
 	}
 
+	shutdown := make(chan error)
+	go func() {
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+		s := <-quit
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		app.l.Infow("signal caught", "signal", s.String())
+		shutdown <- srv.Shutdown(ctx)
+	}()
+
 	app.l.Infow("Starting server at", zap.String("addr", app.config.addr), zap.String("env", app.config.env))
 	err := srv.ListenAndServe()
-	if err != nil {
-		log.Fatalf("Error starting server: %v", err)
+	if !errors.Is(err, http.ErrServerClosed) {
+		return err
 	}
+	err = <-shutdown
+	if err != nil {
+		return err
+	}
+	app.l.Infow("server has stopped", "addr", app.config.addr, "env", app.config.env)
 	return nil
 }
+
+// if err != nil {
+// 	log.Fatalf("Error starting server: %v", err)
+// }

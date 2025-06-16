@@ -4,11 +4,14 @@ import (
 	"log"
 	"time"
 
+	"github.com/redis/go-redis/v9"
 	"github.com/theluminousartemis/socialnews/internal/auth"
 	"github.com/theluminousartemis/socialnews/internal/db"
 	"github.com/theluminousartemis/socialnews/internal/env"
 	"github.com/theluminousartemis/socialnews/internal/mailer"
+	"github.com/theluminousartemis/socialnews/internal/ratelimiter"
 	"github.com/theluminousartemis/socialnews/internal/store"
+	"github.com/theluminousartemis/socialnews/internal/store/cache"
 	"go.uber.org/zap"
 )
 
@@ -22,12 +25,12 @@ const version = "0.0.1"
 
 // @BasePath					/v1
 //
-// @securityDefinitions.apikey	ApiAuthKey
+// @securityDefinitions.apikey	ApiKeyAuth
 // @in							header
 // @name						Authorization
 // @description
 func main() {
-	cfg := &Config{
+	cfg := config{
 		addr:   env.GetString("ADDR", ":8080"),
 		apiURL: env.GetString("API_URL", "localhost:3000"),
 
@@ -50,12 +53,22 @@ func main() {
 				pass: env.GetString("AUTH_BASIC_PASS", "admin"),
 			},
 			token: jwtConfig{
-				secret: env.GetString("AUTH_TOKEN_SECRET", "VeryComplexAuthTokenSecret"),
+				secret: env.GetString("AUTH_TOKEN_SECRET", "example"),
 				exp:    time.Hour * 24 * 3,
 				iss:    "wise.ly",
 			},
 		},
-
+		redisCfg: redisConfig{
+			addr:     env.GetString("REDIS_ADDR", "localhost:6379"),
+			password: env.GetString("REDIS_PASSWORD", ""),
+			db:       env.GetInt("REDIS_DB", 0),
+			enabled:  env.GetBool("REDIS_ENABLED", true),
+		},
+		ratelimiter: ratelimiter.Config{
+			RequestsPerTimeFrame: env.GetInt("RATELIMITER_REQUESTS_COUNT", 20), //test
+			Timeframe:            time.Minute * 2,
+			Enabled:              env.GetBool("RATELIMITER_ENABLED", true),
+		},
 		frontendURL: env.GetString("FRONTEND_URL", "http://localhost:4000"),
 	}
 	//logger
@@ -71,12 +84,25 @@ func main() {
 	logger.Info("database connection pool established")
 	store := store.NewPostgresStorage(db)
 
+	//redis init
+	var redisClient *redis.Client
+	if cfg.redisCfg.enabled {
+		redisClient = cache.NewRedisClient(cfg.redisCfg.addr, cfg.redisCfg.password, cfg.redisCfg.db)
+		logger.Info("redis connection established")
+	}
+	cache := cache.NewRedisStorage(redisClient)
+
 	//mailer
 	// mailer := mailer.NewSendgrid(cfg.mail.sendGrid.apiKey, cfg.mail.fromEmail)
 	mailtrap, err := mailer.NewMailTrapClient(cfg.mail.username, cfg.mail.fromEmail, cfg.mail.password)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	//ratelimiter
+	ratelimiter := ratelimiter.NewFixedWindowRateLimiter(
+		cfg.ratelimiter.RequestsPerTimeFrame, cfg.ratelimiter.Timeframe,
+	)
 
 	jwtAuthenticator := auth.NewJWTAuthenticator(cfg.auth.token.secret, cfg.auth.token.iss, cfg.auth.token.iss)
 
@@ -86,8 +112,10 @@ func main() {
 		l:             logger,
 		mailer:        mailtrap,
 		authenticator: jwtAuthenticator,
+		cache:         cache,
+		rateLimiter:   ratelimiter,
 	}
 
-	mux := app.Mount()
+	mux := app.mount()
 	app.Start(mux)
 }

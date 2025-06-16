@@ -179,7 +179,7 @@ var comment = []string{
 	"Very inspiring, thank you for sharing!",
 }
 
-func Seed(store *store.Storage, db *sql.DB) {
+func Seed(store store.Storage, db *sql.DB) {
 	ctx := context.Background()
 
 	users := generateUsers(100)
@@ -218,6 +218,9 @@ func generateUsers(n int) []*store.User {
 		users[i] = &store.User{
 			Username: usernames[i%len(usernames)] + fmt.Sprintf("%d", i),
 			Email:    usernames[i%len(usernames)] + fmt.Sprintf("%d", i) + "@example.com",
+			Role: store.Role{
+				Name: "user",
+			},
 		}
 	}
 	return users

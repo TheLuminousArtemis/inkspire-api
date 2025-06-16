@@ -17,7 +17,6 @@ var postCtxKey postkey = "post"
 type CreatePostPayload struct {
 	Title   string   `json:"title" validate:"required,max=100"`
 	Content string   `json:"content" validate:"required,max=10000"`
-	UserID  int64    `json:"user_id" validate:"required"`
 	Tags    []string `json:"tags"`
 }
 
@@ -48,12 +47,13 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	user := getUserFromCtx(r)
+
 	post := &store.Post{
 		Title:   payload.Title,
 		Content: payload.Content,
 		Tags:    payload.Tags,
-		//change after auth
-		UserID: 1,
+		UserID:  user.ID,
 	}
 
 	ctx := r.Context()

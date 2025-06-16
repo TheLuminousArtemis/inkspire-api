@@ -39,3 +39,14 @@ func (app *application) unauthorizedErrorResponse(w http.ResponseWriter, r *http
 	app.l.Warnf("unauthorized error", "method", r.Method, "path", r.URL.Path, "error", err.Error())
 	writeJSONError(w, http.StatusUnauthorized, "unauthorized")
 }
+
+func (app *application) forbiddenResponse(w http.ResponseWriter, r *http.Request) {
+	app.l.Warnw("forbidden response error", "method", r.Method, "path", r.URL.Path)
+	writeJSONError(w, http.StatusForbidden, "forbidden")
+}
+
+func (app *application) rateLimitExceededResponse(w http.ResponseWriter, r *http.Request, retryAfter string) {
+	app.l.Infow("rate limit exceeded", "remote_addr", r.RemoteAddr, "method", r.Method, "path", r.URL.Path)
+	w.Header().Set("Retry-After", retryAfter)
+	writeJSONError(w, http.StatusTooManyRequests, "rate limit exceeded")
+}

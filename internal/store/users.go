@@ -17,6 +17,8 @@ type User struct {
 	Password  password  `json:"-"`
 	CreatedAt time.Time `json:"created_at"`
 	IsActive  bool      `json:"is_active"`
+	RoleID    int64     `json:"role_id"`
+	Role      Role      `json:"role"`
 }
 
 type password struct {
@@ -34,16 +36,35 @@ func (p *password) Set(text string) error {
 	return nil
 }
 
+func (p *password) Compare(text string) error {
+	//broken due to incorrect hash comparison
+	//solved after actually returning the hash from the database
+	// slog.Info("Comparing hash", "hash", string(p.hash), "text", text)
+	return bcrypt.CompareHashAndPassword(p.hash, []byte(text))
+}
+
+// func (p *password) LoadFromHash(hash string) {
+// 	p.hash = []byte(hash)
+// }
+
 type PostgresUserStore struct {
 	db *sql.DB
 }
 
 func (s *PostgresUserStore) Create(ctx context.Context, tx *sql.Tx, user *User) error {
 	query := `
-INSERT INTO users (username, email, password)
-VALUES ($1, $2, $3)
+INSERT INTO users (username, email, password, role_id)
+VALUES ($1, $2, $3, (SELECT id FROM roles WHERE name = $4))
 RETURNING id, created_at`
-	row := tx.QueryRowContext(ctx, query, user.Username, user.Email, user.Password.hash)
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
+
+	role := user.Role.Name
+	if role == "" {
+		role = "user"
+	}
+
+	row := tx.QueryRowContext(ctx, query, user.Username, user.Email, user.Password.hash, role)
 	err := row.Scan(&user.ID, &user.CreatedAt)
 	if err != nil {
 		switch {
@@ -60,11 +81,14 @@ RETURNING id, created_at`
 
 func (s *PostgresUserStore) GetByID(ctx context.Context, id int64) (*User, error) {
 	query := `
-SELECT id, username, email, created_at
+SELECT users.id, username, email, password,created_at, roles.*
 FROM users
-WHERE id = $1 AND is_active = true`
+JOIN roles ON (users.role_id = roles.id)
+WHERE users.id = $1 AND is_active = true`
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	defer cancel()
 	var user User
-	err := s.db.QueryRowContext(ctx, query, id).Scan(&user.ID, &user.Username, &user.Email, &user.CreatedAt)
+	err := s.db.QueryRowContext(ctx, query, id).Scan(&user.ID, &user.Username, &user.Email, &user.Password.hash, &user.CreatedAt, &user.Role.ID, &user.Role.Name, &user.Role.Level, &user.Role.Description)
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:
@@ -128,11 +152,11 @@ func (s *PostgresUserStore) Delete(ctx context.Context, userID int64) error {
 }
 
 func (s *PostgresUserStore) GetUserByEmail(ctx context.Context, email string) (*User, error) {
-	query := `SELECT id, username, email, created_at FROM users WHERE email = $1 AND is_active = true`
+	query := `SELECT id, username, email, password,created_at FROM users WHERE email = $1 AND is_active = true`
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 	var user User
-	err := s.db.QueryRowContext(ctx, query, email).Scan(&user.ID, &user.Username, &user.Email, &user.CreatedAt)
+	err := s.db.QueryRowContext(ctx, query, email).Scan(&user.ID, &user.Username, &user.Email, &user.Password.hash, &user.CreatedAt)
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:

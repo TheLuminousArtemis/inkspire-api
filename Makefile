@@ -21,3 +21,11 @@ seed:
 gen-docs:
 	# @swag init -g ./api/main.go -d ./cmd/api,./internal/db,./internal/store, && swag fmt
 	@swag init -g ./main.go -d cmd/api,./internal/db,./internal/store && swag fmt
+
+.PHONY: migrate-force 
+migrate-force:   
+	@migrate -path=$(MIGRATIONS_PATH) -database=$(DB_ADDR) force $(filter-out $@,$(MAKECMDGOALS))
+
+.PHONY: test
+test:
+	@go test -v ./...
