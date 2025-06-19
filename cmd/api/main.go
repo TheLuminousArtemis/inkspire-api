@@ -66,7 +66,7 @@ func main() {
 			enabled:  env.GetBool("REDIS_ENABLED", true),
 		},
 		ratelimiter: ratelimiter.Config{
-			RequestsPerTimeFrame: env.GetInt("RATELIMITER_REQUESTS_COUNT", 100), //test
+			RequestsPerTimeFrame: env.GetInt("RATELIMITER_REQUESTS_COUNT", 20), //test
 			Timeframe:            time.Minute * 2,
 			Enabled:              env.GetBool("RATELIMITER_ENABLED", true),
 		},
@@ -101,8 +101,8 @@ func main() {
 	}
 
 	//ratelimiter
-	ratelimiter := ratelimiter.NewFixedWindowRateLimiter(
-		cfg.ratelimiter.RequestsPerTimeFrame, cfg.ratelimiter.Timeframe,
+	ratelimiter := ratelimiter.NewRedisFixedWindowRateLimiter(
+		cache, cfg.ratelimiter.RequestsPerTimeFrame, cfg.ratelimiter.Timeframe,
 	)
 
 	jwtAuthenticator := auth.NewJWTAuthenticator(cfg.auth.token.secret, cfg.auth.token.iss, cfg.auth.token.iss)

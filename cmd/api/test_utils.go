@@ -18,7 +18,8 @@ func newTestApplication(t *testing.T, cfg config) *application {
 	mockStore := store.NewMockStore()
 	mockCache := cache.NewMockStore()
 	auth := &auth.TestAuthenticator{}
-	ratelimiter := ratelimiter.NewFixedWindowRateLimiter(
+	ratelimiter := ratelimiter.NewRedisFixedWindowRateLimiter(
+		mockCache,
 		cfg.ratelimiter.RequestsPerTimeFrame,
 		cfg.ratelimiter.Timeframe,
 	)

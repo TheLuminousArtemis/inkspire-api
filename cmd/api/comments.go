@@ -50,6 +50,10 @@ func (app *application) createCommentHandler(w http.ResponseWriter, r *http.Requ
 
 	ctx := r.Context()
 
+	if *payload.ParentID == 0 {
+		payload.ParentID = nil
+	}
+
 	if payload.ParentID != nil {
 		parentComment, err := app.storage.Comments.GetByID(ctx, *payload.ParentID)
 		if err != nil {

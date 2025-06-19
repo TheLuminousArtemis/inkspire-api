@@ -712,6 +712,9 @@ const docTemplate = `{
             "properties": {
                 "content": {
                     "type": "string"
+                },
+                "parent_id": {
+                    "type": "integer"
                 }
             }
         },

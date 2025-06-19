@@ -1,9 +1,12 @@
 package ratelimiter
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 type Limiter interface {
-	Allow(ip string) (bool, time.Duration)
+	Allow(ctx context.Context, ip string) (bool, time.Duration, error)
 }
 
 type Config struct {

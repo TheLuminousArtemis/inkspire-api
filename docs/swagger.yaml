@@ -4,6 +4,8 @@ definitions:
     properties:
       content:
         type: string
+      parent_id:
+        type: integer
     required:
     - content
     type: object
