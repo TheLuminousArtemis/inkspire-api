@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -14,7 +15,8 @@ type commentkey string
 var commentCtxKey commentkey = "comment"
 
 type CommentPayload struct {
-	Content string `json:"content" validate:"required"`
+	Content  string `json:"content" validate:"required"`
+	ParentID *int64 `json:"parent_id"`
 }
 
 // CreateComment godoc
@@ -46,14 +48,35 @@ func (app *application) createCommentHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	user := getUserFromCtx(r)
-	comment := &store.Comment{
-		Content: payload.Content,
-		PostID:  post.ID,
-		UserID:  user.ID,
+	ctx := r.Context()
+
+	if payload.ParentID != nil {
+		parentComment, err := app.storage.Comments.GetByID(ctx, *payload.ParentID)
+		if err != nil {
+			switch err {
+			case store.ErrNotFound:
+				app.commentNotFoundErrorResponse(w, r, err)
+			default:
+				app.internalServerError(w, r, err)
+			}
+			return
+		}
+
+		if parentComment.PostID != post.ID {
+			app.badRequestError(w, r, fmt.Errorf("parent comment %d does not belong to post %d", *payload.ParentID, post.ID))
+			return
+		}
+
 	}
 
-	ctx := r.Context()
+	user := getUserFromCtx(r)
+	comment := &store.Comment{
+		Content:  payload.Content,
+		PostID:   post.ID,
+		UserID:   user.ID,
+		ParentID: payload.ParentID,
+	}
+
 	if err := app.storage.Comments.Create(ctx, comment); err != nil {
 		app.internalServerError(w, r, err)
 		return
