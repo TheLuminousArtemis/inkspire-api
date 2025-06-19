@@ -28,7 +28,7 @@ type CreatePostPayload struct {
 //	@Accept			json
 //	@Produce		json
 //	@Param			payload	body		CreatePostPayload	true	"Post payload"
-//	@Success		200		{object}	store.Post
+//	@Success		200		{object}	store.SwaggerPostResponseSuccess
 //	@Failure		399		{object}	error
 //	@Failure		400		{object}	error
 //	@Failure		499		{object}	error
@@ -76,7 +76,7 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 //	@Accept			json
 //	@Produce		json
 //	@Param			id	path		int	true	"Post ID"
-//	@Success		200	{object}	store.Post
+//	@Success		200	{object}	store.SwaggerPostResponseSuccess
 //	@Failure		404	{object}	error
 //	@Failure		500	{object}	error
 //	@Security		ApiKeyAuth
@@ -134,7 +134,7 @@ type UpdatePostPayload struct {
 //	@Produce		json
 //	@Param			id		path		int					true	"Post ID"
 //	@Param			payload	body		UpdatePostPayload	true	"Post payload"
-//	@Success		200		{object}	store.Post
+//	@Success		200		{object}	store.SwaggerPostResponseSuccess
 //	@Failure		400		{object}	error
 //	@Failure		401		{object}	error
 //	@Failure		404		{object}	error

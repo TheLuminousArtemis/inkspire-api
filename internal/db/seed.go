@@ -182,7 +182,7 @@ var comment = []string{
 func Seed(store store.Storage, db *sql.DB) {
 	ctx := context.Background()
 
-	users := generateUsers(100)
+	users := generateUsers(50)
 	tx, _ := db.BeginTx(ctx, nil)
 
 	for _, user := range users {

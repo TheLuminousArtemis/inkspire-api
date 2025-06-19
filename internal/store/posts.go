@@ -16,16 +16,29 @@ type PostUser struct {
 }
 
 type Post struct {
-	ID        int64     `json:"id"`
-	Title     string    `json:"title"`
-	Content   string    `json:"content"`
-	UserID    int64     `json:"user_id"`
-	Tags      []string  `json:"tags"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Comments  []Comment `json:"comments"`
-	Version   int       `json:"version"`
-	User      PostUser  `json:"user"`
+	ID        int64      `json:"id"`
+	Title     string     `json:"title"`
+	Content   string     `json:"content"`
+	UserID    int64      `json:"user_id"`
+	Tags      []string   `json:"tags"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
+	Comments  []*Comment `json:"comments"`
+	Version   int        `json:"version"`
+	User      PostUser   `json:"user"`
+}
+
+type SwaggerPostResponseSuccess struct {
+	ID        int64                    `json:"id"`
+	Title     string                   `json:"title"`
+	Content   string                   `json:"content"`
+	UserID    int64                    `json:"user_id"`
+	Tags      []string                 `json:"tags"`
+	CreatedAt time.Time                `json:"created_at"`
+	UpdatedAt time.Time                `json:"updated_at"`
+	Comments  []SwaggerCommentResponse `json:"comments"`
+	Version   int                      `json:"version"`
+	User      PostUser                 `json:"user"`
 }
 
 type PostWithMetadata struct {
@@ -57,8 +70,8 @@ func (s *PostgresPostStore) GetByID(ctx context.Context, postID int64) (*Post, e
 	post := &Post{}
 	err := row.Scan(&post.ID, &post.Title, &post.Content, &post.UserID, &post.CreatedAt, &post.UpdatedAt, pq.Array(&post.Tags), &post.Version, &post.User.ID, &post.User.Username)
 	if err != nil {
-		switch {
-		case errors.Is(err, sql.ErrNoRows):
+		switch err {
+		case sql.ErrNoRows:
 			return nil, ErrNotFound
 		default:
 			return nil, err
@@ -68,10 +81,10 @@ func (s *PostgresPostStore) GetByID(ctx context.Context, postID int64) (*Post, e
 }
 
 func (s *PostgresPostStore) Delete(ctx context.Context, postID int64) error {
-	query := `DELETE FROM posts WHERE id = $1`
+	query := `UPDATE posts SET title = $1, content = $1, deleted = true WHERE id = $2`
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
-	res, err := s.db.ExecContext(ctx, query, postID)
+	res, err := s.db.ExecContext(ctx, query, DeletedContent, postID)
 	if err != nil {
 		return err
 	}

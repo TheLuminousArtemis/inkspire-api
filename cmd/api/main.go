@@ -1,6 +1,7 @@
 package main
 
 import (
+	"expvar"
 	"log"
 	"time"
 
@@ -65,7 +66,7 @@ func main() {
 			enabled:  env.GetBool("REDIS_ENABLED", true),
 		},
 		ratelimiter: ratelimiter.Config{
-			RequestsPerTimeFrame: env.GetInt("RATELIMITER_REQUESTS_COUNT", 20), //test
+			RequestsPerTimeFrame: env.GetInt("RATELIMITER_REQUESTS_COUNT", 100), //test
 			Timeframe:            time.Minute * 2,
 			Enabled:              env.GetBool("RATELIMITER_ENABLED", true),
 		},
@@ -105,7 +106,10 @@ func main() {
 	)
 
 	jwtAuthenticator := auth.NewJWTAuthenticator(cfg.auth.token.secret, cfg.auth.token.iss, cfg.auth.token.iss)
-
+	expvar.NewString("version").Set(version)
+	expvar.Publish("database", expvar.Func(func() any {
+		return db.Stats()
+	}))
 	app := &application{
 		config:        cfg,
 		storage:       store,
@@ -117,5 +121,5 @@ func main() {
 	}
 
 	mux := app.mount()
-	app.Start(mux)
+	app.start(mux)
 }

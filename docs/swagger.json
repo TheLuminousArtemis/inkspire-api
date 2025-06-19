@@ -152,7 +152,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/store.Post"
+                            "$ref": "#/definitions/store.SwaggerPostResponseSuccess"
                         }
                     },
                     "399": {
@@ -201,7 +201,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/store.Post"
+                            "$ref": "#/definitions/store.SwaggerPostResponseSuccess"
                         }
                     },
                     "404": {
@@ -296,7 +296,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/store.Post"
+                            "$ref": "#/definitions/store.SwaggerPostResponseSuccess"
                         }
                     },
                     "400": {
@@ -359,11 +359,68 @@
                     "200": {
                         "description": "Comment created",
                         "schema": {
-                            "$ref": "#/definitions/store.Comment"
+                            "$ref": "#/definitions/store.SwaggerCommentResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {}
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {}
+                    }
+                }
+            }
+        },
+        "/posts/{postID}/comments/{commentID}": {
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Delete a comment by its ID if the user is the owner or has appropriate role",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "posts",
+                    "comments"
+                ],
+                "summary": "Delete a comment",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Post ID",
+                        "name": "postID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Comment ID",
+                        "name": "commentID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Comment deleted successfully",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {}
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {}
                     },
                     "500": {
@@ -768,8 +825,17 @@
                 "id": {
                     "type": "integer"
                 },
+                "parent_id": {
+                    "type": "integer"
+                },
                 "post_id": {
                     "type": "integer"
+                },
+                "replies": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/store.Comment"
+                    }
                 },
                 "user": {
                     "$ref": "#/definitions/store.CommentUser"
@@ -779,55 +845,22 @@
                 }
             }
         },
-        "store.CommentUser": {
+        "store.CommentShallow": {
             "type": "object",
             "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
-        "store.Post": {
-            "type": "object",
-            "properties": {
-                "comments": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/store.Comment"
-                    }
-                },
                 "content": {
                     "type": "string"
                 },
-                "created_at": {
-                    "type": "string"
-                },
                 "id": {
                     "type": "integer"
-                },
-                "tags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "title": {
+                }
+            }
+        },
+        "store.CommentUser": {
+            "type": "object",
+            "properties": {
+                "username": {
                     "type": "string"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "user": {
-                    "$ref": "#/definitions/store.PostUser"
-                },
-                "user_id": {
-                    "type": "integer"
-                },
-                "version": {
-                    "type": "integer"
                 }
             }
         },
@@ -900,6 +933,80 @@
                 },
                 "name": {
                     "type": "string"
+                }
+            }
+        },
+        "store.SwaggerCommentResponse": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "parent_id": {
+                    "description": "Deleted   bool             `json:\"deleted\"`",
+                    "type": "integer"
+                },
+                "post_id": {
+                    "type": "integer"
+                },
+                "replies": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/store.CommentShallow"
+                    }
+                },
+                "user": {
+                    "$ref": "#/definitions/store.CommentUser"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "store.SwaggerPostResponseSuccess": {
+            "type": "object",
+            "properties": {
+                "comments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/store.SwaggerCommentResponse"
+                    }
+                },
+                "content": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/store.PostUser"
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "version": {
+                    "type": "integer"
                 }
             }
         },

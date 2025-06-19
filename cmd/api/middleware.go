@@ -149,6 +149,32 @@ func (app *application) getUser(ctx context.Context, userID int64) (*store.User,
 
 }
 
+func (app *application) checkcommentOwnership(requiredRole string, next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := getUserFromCtx(r)
+		comment := getCommentfromCtx(r)
+		if comment.UserID == user.ID {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		allowed, err := app.checkRolePrecedence(r.Context(), user, requiredRole)
+		if err != nil {
+			app.internalServerError(w, r, err)
+			return
+		}
+
+		if !allowed {
+			app.l.Warnw("User lacks permission to modify the comment", "userID", user.ID, "username", user.Username)
+			app.forbiddenResponse(w, r)
+			return
+		}
+
+		app.l.Infow("Moderator/Admin has modified the comment", "userID", user.ID, "username", user.Username)
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (app *application) RateLimiterMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if app.config.ratelimiter.Enabled {
@@ -157,5 +183,6 @@ func (app *application) RateLimiterMiddleware(next http.Handler) http.Handler {
 				return
 			}
 		}
+		next.ServeHTTP(w, r)
 	})
 }

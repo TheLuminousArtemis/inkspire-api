@@ -14,6 +14,7 @@ var (
 	QueryTimeoutDuration = 5 * time.Second
 	ErrDuplicateEmail    = errors.New("duplicate email")
 	ErrDuplicateUsername = errors.New("duplicate username")
+	DeletedContent       = "[deleted]"
 )
 
 type Storage struct {
@@ -34,7 +35,9 @@ type Storage struct {
 	}
 	Comments interface {
 		Create(context.Context, *Comment) error
-		GetByPostID(context.Context, int64) ([]Comment, error)
+		GetByPostID(context.Context, int64) ([]*Comment, error)
+		Delete(context.Context, int64) error
+		GetByID(context.Context, int64) (*Comment, error)
 	}
 	Followers interface {
 		Follow(ctx context.Context, followerID, userID int64) error

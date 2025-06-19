@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"expvar"
 	"fmt"
 	"net/http"
 	"os"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 	"github.com/theluminousartemis/socialnews/docs"
 	"github.com/theluminousartemis/socialnews/internal/auth"
@@ -87,13 +89,23 @@ func (app *application) mount() *chi.Mux {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.Timeout(60 * time.Second))
+	r.Use(cors.Handler(cors.Options{
+		// AllowedOrigins: []string{env.GetString("CORS_ALLOWED_ORIGIN", "http://localhost:4000")},
+		AllowedOrigins: []string{"https://*", "http://*"},
+		// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
+	}))
 	if app.config.ratelimiter.Enabled {
 		r.Use(app.RateLimiterMiddleware)
 	}
+	r.Use(middleware.Timeout(60 * time.Second))
 	r.Route("/v1", func(r chi.Router) {
-		// r.With(app.BasicAuthMiddleware()).Get("/health", app.HealthCheck)
 		r.Get("/health", app.HealthCheck)
+		r.With(app.BasicAuthMiddleware()).Get("/metrics", expvar.Handler().ServeHTTP)
 		docsUrl := fmt.Sprintf("%s/swagger/doc.json", app.config.addr)
 		r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL(docsUrl)))
 		r.Route("/posts", func(r chi.Router) {
@@ -106,6 +118,10 @@ func (app *application) mount() *chi.Mux {
 				r.Patch("/", app.checkPostOwnership("moderator", app.updatePostHandler))
 				r.Route("/comments", func(r chi.Router) {
 					r.Post("/", app.createCommentHandler)
+					r.Route("/{commentID}", func(r chi.Router) {
+						r.Use(app.commentsContextMiddleware)
+						r.Delete("/", app.checkcommentOwnership("admin", app.deleteCommentHandler))
+					})
 				})
 			})
 		})
@@ -134,7 +150,7 @@ func (app *application) mount() *chi.Mux {
 	return r
 }
 
-func (app *application) Start(mux http.Handler) error {
+func (app *application) start(mux http.Handler) error {
 	docs.SwaggerInfo.Version = version
 	docs.SwaggerInfo.Host = app.config.apiURL
 	docs.SwaggerInfo.BasePath = "/v1"

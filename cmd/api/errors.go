@@ -29,6 +29,11 @@ func (app *application) postNotFoundErrorResponse(w http.ResponseWriter, r *http
 	writeJSONError(w, http.StatusNotFound, "Post not found error")
 }
 
+func (app *application) commentNotFoundErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
+	app.l.Warnf("comment not found error: %v path: %s err: %v", r.Method, r.URL.Path, err.Error())
+	writeJSONError(w, http.StatusNotFound, "Comment not found error")
+}
+
 func (app *application) unauthorizedBasicResponse(w http.ResponseWriter, r *http.Request, err error) {
 	app.l.Warnf("unauthorized basic error", "method", r.Method, "path", r.URL.Path, "error", err.Error())
 	w.Header().Set("WWW-Authenticate", `Basic realm="restricted", charset=UTF-8"`)

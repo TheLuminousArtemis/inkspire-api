@@ -13,9 +13,21 @@ migrate-up:
 migrate-down:
 	@migrate -path=$(MIGRATIONS_PATH) -database=$(DB_ADDR) down $(filter-out $@, $(MAKECMDGOALS))
 
+.PHONY: migrate up
+migrate-up-test:
+	@migrate -path=$(MIGRATIONS_PATH) -database=$(DB_ADDR_TEST) up
+
+.PHONY: migrate down
+migrate-down-test:
+	@migrate -path=$(MIGRATIONS_PATH) -database=$(DB_ADDR_TEST) down $(filter-out $@, $(MAKECMDGOALS))
+
 .PHONY: seed
 seed:
 	@go run ./migrate/seed/main.go
+
+.PHONY: seed
+test-seed:
+	@go run ./migrate/dev/main.go
 
 .PHONY: gen-docs
 gen-docs:
