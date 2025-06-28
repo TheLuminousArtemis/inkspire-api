@@ -85,7 +85,7 @@ func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request
 	ctx := r.Context()
 	if err := app.storage.Followers.Follow(ctx, followuser.ID, followedID); err != nil {
 		switch err {
-		case store.FollowConflict:
+		case store.ErrFollowConflict:
 			app.conflictResponse(w, r, err)
 			return
 		default:
