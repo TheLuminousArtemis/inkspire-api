@@ -10,7 +10,7 @@ import (
 var (
 	ErrNotFound          = errors.New("record not found")
 	ErrConflict          = errors.New("record conflict")
-	FollowConflict       = errors.New("follow conflict")
+	ErrFollowConflict    = errors.New("follow conflict")
 	QueryTimeoutDuration = 5 * time.Second
 	ErrDuplicateEmail    = errors.New("duplicate email")
 	ErrDuplicateUsername = errors.New("duplicate username")
