@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/theluminousartemis/socialnews/internal/store"
+	"github.com/theluminousartemis/inkspire/internal/store"
 )
 
 func NewMockStore() Storage {
@@ -28,9 +28,9 @@ type MockRateLimitStore struct {
 	count int
 }
 
-func (m *MockRateLimitStore) GetCount(ctx context.Context, key string) (int, error) {
-	return m.count, nil
-}
+// func (m *MockRateLimitStore) GetCount(ctx context.Context, key string) (int, error) {
+// 	return m.count, nil
+// }
 
 func (m *MockRateLimitStore) Increment(ctx context.Context, key string) (int, error) {
 	m.count++

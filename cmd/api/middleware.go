@@ -8,8 +8,9 @@ import (
 	"strconv"
 	"strings"
 
+	// "github.com/golang-jwt/jwt/v5"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/theluminousartemis/socialnews/internal/store"
+	"github.com/theluminousartemis/inkspire/internal/store"
 )
 
 func (app *application) BasicAuthMiddleware() func(http.Handler) http.Handler {

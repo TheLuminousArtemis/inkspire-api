@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/theluminousartemis/socialnews/internal/store/cache"
+	"github.com/theluminousartemis/inkspire/internal/store/cache"
 )
 
 type RedisFixedWindowRateLimiter struct {

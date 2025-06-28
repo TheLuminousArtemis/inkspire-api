@@ -3,9 +3,9 @@ package main
 import (
 	"log"
 
-	"github.com/theluminousartemis/socialnews/internal/db"
-	"github.com/theluminousartemis/socialnews/internal/env"
-	"github.com/theluminousartemis/socialnews/internal/store"
+	"github.com/theluminousartemis/inkspire/internal/db"
+	"github.com/theluminousartemis/inkspire/internal/env"
+	"github.com/theluminousartemis/inkspire/internal/store"
 )
 
 func main() {

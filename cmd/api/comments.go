@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/theluminousartemis/socialnews/internal/store"
+	"github.com/theluminousartemis/inkspire/internal/store"
 )
 
 type commentkey string

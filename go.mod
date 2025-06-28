@@ -1,4 +1,4 @@
-module github.com/theluminousartemis/socialnews
+module github.com/theluminousartemis/inkspire
 
 go 1.24.1
 

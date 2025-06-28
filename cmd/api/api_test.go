@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theluminousartemis/socialnews/internal/ratelimiter"
+	"github.com/theluminousartemis/inkspire/internal/ratelimiter"
 )
 
 func TestRateLimiterMiddleware(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 	"log"
 	"math/rand/v2"
 
-	"github.com/theluminousartemis/socialnews/internal/store"
+	"github.com/theluminousartemis/inkspire/internal/store"
 )
 
 var usernames = []string{

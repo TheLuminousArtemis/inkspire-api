@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres:latest
-    container_name: wisely-db
+    container_name: inkspire-db
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: adminpassword
@@ -13,7 +13,7 @@ services:
 
   redis:
     image: redis:alpine
-    container_name: wisely-redis
+    container_name: inkspire-redis
     restart: unless-stopped
     ports:
       - "6379:6379"

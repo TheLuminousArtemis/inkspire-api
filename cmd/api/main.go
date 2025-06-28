@@ -6,20 +6,20 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
-	"github.com/theluminousartemis/socialnews/internal/auth"
-	"github.com/theluminousartemis/socialnews/internal/db"
-	"github.com/theluminousartemis/socialnews/internal/env"
-	"github.com/theluminousartemis/socialnews/internal/mailer"
-	"github.com/theluminousartemis/socialnews/internal/ratelimiter"
-	"github.com/theluminousartemis/socialnews/internal/store"
-	"github.com/theluminousartemis/socialnews/internal/store/cache"
+	"github.com/theluminousartemis/inkspire/internal/auth"
+	"github.com/theluminousartemis/inkspire/internal/db"
+	"github.com/theluminousartemis/inkspire/internal/env"
+	"github.com/theluminousartemis/inkspire/internal/mailer"
+	"github.com/theluminousartemis/inkspire/internal/ratelimiter"
+	"github.com/theluminousartemis/inkspire/internal/store"
+	"github.com/theluminousartemis/inkspire/internal/store/cache"
 	"go.uber.org/zap"
 )
 
 const version = "0.0.1"
 
-//	@title			Wise.ly
-//	@description	API for Wise.ly, a community driven Q&A platform.
+//	@title			inkspire
+//	@description	API for inkspire, a community driven Q&A platform.
 
 //	@license.name	Apache 2.0
 //	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
@@ -56,7 +56,7 @@ func main() {
 			token: jwtConfig{
 				secret: env.GetString("AUTH_TOKEN_SECRET", "example"),
 				exp:    time.Hour * 24 * 3,
-				iss:    "wise.ly",
+				iss:    "inkspire",
 			},
 		},
 		redisCfg: redisConfig{

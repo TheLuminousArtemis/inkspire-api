@@ -15,12 +15,12 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
-	"github.com/theluminousartemis/socialnews/docs"
-	"github.com/theluminousartemis/socialnews/internal/auth"
-	"github.com/theluminousartemis/socialnews/internal/mailer"
-	"github.com/theluminousartemis/socialnews/internal/ratelimiter"
-	"github.com/theluminousartemis/socialnews/internal/store"
-	"github.com/theluminousartemis/socialnews/internal/store/cache"
+	"github.com/theluminousartemis/inkspire/docs"
+	"github.com/theluminousartemis/inkspire/internal/auth"
+	"github.com/theluminousartemis/inkspire/internal/mailer"
+	"github.com/theluminousartemis/inkspire/internal/ratelimiter"
+	"github.com/theluminousartemis/inkspire/internal/store"
+	"github.com/theluminousartemis/inkspire/internal/store/cache"
 	"go.uber.org/zap"
 )
 

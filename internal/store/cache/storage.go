@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
-	"github.com/theluminousartemis/socialnews/internal/store"
+	"github.com/theluminousartemis/inkspire/internal/store"
 )
 
 type Storage struct {
@@ -14,7 +14,7 @@ type Storage struct {
 		Set(context.Context, *store.User) error
 	}
 	RedisRateLimit interface {
-		GetCount(ctx context.Context, key string) (int, error)
+		// GetCount(ctx context.Context, key string) (int, error)
 		Increment(ctx context.Context, key string) (int, error)
 		TTL(ctx context.Context, key string) (time.Duration, error)
 	}

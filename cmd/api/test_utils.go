@@ -5,10 +5,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/theluminousartemis/socialnews/internal/auth"
-	"github.com/theluminousartemis/socialnews/internal/ratelimiter"
-	"github.com/theluminousartemis/socialnews/internal/store"
-	"github.com/theluminousartemis/socialnews/internal/store/cache"
+	"github.com/theluminousartemis/inkspire/internal/auth"
+	"github.com/theluminousartemis/inkspire/internal/ratelimiter"
+	"github.com/theluminousartemis/inkspire/internal/store"
+	"github.com/theluminousartemis/inkspire/internal/store/cache"
 	"go.uber.org/zap"
 )
 

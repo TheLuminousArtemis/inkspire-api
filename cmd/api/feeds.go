@@ -3,7 +3,7 @@ package main
 import (
 	"net/http"
 
-	"github.com/theluminousartemis/socialnews/internal/store"
+	"github.com/theluminousartemis/inkspire/internal/store"
 )
 
 // getUserFeedHandler godoc
