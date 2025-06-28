@@ -1,8 +1,8 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "API for Wise.ly, a community driven Q\u0026A platform.",
-        "title": "Wise.ly",
+        "description": "API for inkspire, a community driven Q\u0026A platform.",
+        "title": "inkspire",
         "contact": {},
         "license": {
             "name": "Apache 2.0",

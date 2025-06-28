@@ -231,11 +231,11 @@ definitions:
     type: object
 info:
   contact: {}
-  description: API for Wise.ly, a community driven Q&A platform.
+  description: API for inkspire, a community driven Q&A platform.
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
-  title: Wise.ly
+  title: inkspire
 paths:
   /authentication/token:
     post:
