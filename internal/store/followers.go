@@ -25,7 +25,7 @@ func (s *PostgresFollowerStore) Follow(ctx context.Context, followerID, userID i
 	_, err := s.db.ExecContext(ctx, query, followerID, userID)
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
-			return FollowConflict
+			return ErrFollowConflict
 		}
 	}
 	return err
