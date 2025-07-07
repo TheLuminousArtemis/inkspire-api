@@ -189,7 +189,5 @@ func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err := app.jsonResponse(w, http.StatusNoContent, ""); err != nil {
-		app.internalServerError(w, r, err)
-	}
+	w.WriteHeader(http.StatusNoContent)
 }
